@@ -1,0 +1,2411 @@
+---
+title             : "Bangla RAAS"
+shorttitle        : "RAAS-B"
+
+author: 
+
+  - name          : "Sanemoon Fatema"
+    affiliation   : "1"
+    corresponding : no    # Define only one corresponding author
+    address       : "Postal address"
+    email         : "camelia2678@gmail.com"
+    role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+      - "Conceptualization"
+      - "Data Curation"
+      - "Formal Analysis"
+      - "Writing - Original Draft Preparation"
+      
+  - name          : "Mushfiqul Anwar Siraji"
+    affiliation   : "2, 3"
+    role:
+      - "Conceptualization"
+      - "Project Management"
+      - "Formal Analysis"
+      - "Visualization"
+      - "Writing – original draft"
+      - "Writing - Review & Editing"
+      - "Supervision"
+      
+  - name          : "Zinnatul Borak"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Department of Educational and Councelling Psychology, University of Dhaka"
+    email         : "my@email.com"
+    role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+      - "Conceptualization"
+      - "Writing - Original Draft Preparation"
+      - "Writing - Review & Editing"
+      - "Supervision"
+
+
+
+
+affiliation:
+  - id            : "1"
+    institution   : "Department of Educational and Counselling Psychology, University of Dhaka"
+  - id            : "2"
+    institution   : "Department of Psychology, Monash University Malaysia"
+  - id            : "3"
+    institution   : "Department of History and Philosophy , North South University"
+
+
+  
+keywords          : "keywords"
+wordcount         : "X"
+
+bibliography      : "r-references.bib"
+
+floatsintext      : no
+linenumbers       : yes
+draft             : no
+mask              : no
+
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+
+classoption       : "man"
+output            : papaja::apa6_docx
+---
+
+```{r setup}
+
+pacman::p_load(MOTE, tidyverse, psych, lavaan,kableExtra,gt,gtsummary, mirt,likert,kutils,semPlot,semTable,semTools,ggcorrplot)
+pacman::p_load(dlookr,qgraph,paran,EFA.MRFA,VIM,DiagrammeR,DiagrammeRsvg,ggplot2,cowplot,rsvg,questionr,magick, readxl,flextable)
+library(papaja)
+library(tabledown)
+library(foreign)
+r_refs("r-references.bib")
+# renv::snapshot()
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+knitr::opts_chunk$set(echo = FALSE, warning = F, message = F, dpi=600)
+options(knitr.duplicate.label = "allow")
+set.seed(123)
+par(family = "Arial")
+```
+
+```{r apatheme, include=F}
+#Create apatheme for the plots
+apatheme=theme_bw()+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        #text=element_text(family = "Helvetica"),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        plot.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.title=element_blank(),
+        axis.line.x = element_line(color='black'),
+        axis.line.y = element_line(color='black'),
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 1))
+
+apatheme_icc=theme_bw()+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        #text=element_text(family = "Helvetica"),
+        axis.text.x = element_text(size = 40),
+        axis.text.y = element_text(size = 40),
+        axis.title.x = element_text(size = 40),
+        axis.title.y = element_text(size = 40),
+        plot.title = element_text(size = 40),
+        legend.text = element_text(size = 40),
+        legend.title=element_blank(),
+        axis.line.x = element_line(color='black'),
+        axis.line.y = element_line(color='black'),
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 1))
+```
+
+```{r}
+data <- readxl::read_excel("Processeddata/RAAS_Field_Study_Clean.xlsx")
+
+## Recoding data$Age
+data$Age <- as.character(data$Age)
+data$Age[data$Age == "17"] <- "17"
+data$Age[data$Age == "18"] <- "18"
+data$Age[data$Age == "19"] <- "19"
+data$Age[data$Age == "20"] <- "20"
+data$Age[data$Age == "21"] <- "21"
+data$Age[data$Age == "22"] <- "22"
+data$Age[data$Age == "23"] <- "23"
+data$Age[data$Age == "24"] <- "24"
+data$Age[data$Age == "25"] <- "25"
+data$Age[data$Age == "26"] <- "26"
+data$Age[data$Age == "27"] <- "27"
+data$Age[data$Age == "28"] <- "28"
+data$Age[data$Age == "30"] <- "30"
+data$Age[data$Age == "31"] <- "31"
+data$Age[data$Age == "56"] <- "56"
+data$Age[is.na(data$Age)] <- "22"
+data$Age <- as.numeric(data$Age)
+
+## Recoding data$Education
+data$Education[data$Education == "BSC running"] <- "Undergrad"
+data$Education[data$Education == "Mental Health"] <- "Postgrad"
+data$Education[data$Education == "Studying in Hon's"] <- "Undergrad"
+data$Education[data$Education == "Undergraduate student"] <- "Undergrad"
+data$Education[data$Education == "অনার্স"] <- "Undergrad"
+data$Education[data$Education == "এইচ এস সি"] <- "HSC"
+data$Education[data$Education == "এস এস সি"] <- "SSC"
+data$Education[data$Education == "ডক্টর অব ফিলোসফি"] <- "PhD"
+data$Education[data$Education == "স্নাতক"] <- "Undergrad"
+data$Education[data$Education == "স্নাতক ১ম বর্ষ"] <- "Undergrad"
+data$Education[data$Education == "স্নাতক ২য় বর্ষ"] <- "Undergrad"
+data$Education[data$Education == "স্নাতক ২য় বর্ষ"] <- "Undergrad"
+data$Education[data$Education == "স্নাতকোত্তর"] <- "Postgrad"
+data$Education <- factor(data$Education)
+
+## Recoding data$Occupation
+data$Occupation[data$Occupation == "freelance work"] <- "Private Job"
+data$Occupation[data$Occupation == "Laboratory Technician."] <- "Private Job"
+data$Occupation[data$Occupation == "Student"] <- "Student"
+data$Occupation[data$Occupation == "Student, home tutor"] <- "Student"
+data$Occupation[data$Occupation == "Tution"] <- "Student"
+data$Occupation[data$Occupation == "Unemployed"] <- "Student"
+data$Occupation[data$Occupation == "কর্পোরেট চাকুরি"] <- "Private Job"
+data$Occupation[data$Occupation == "টিউশন"] <- "Student"
+data$Occupation[data$Occupation == "নাট্যকর্মী"] <- "Private Job"
+data$Occupation[data$Occupation == "ফ্রিল্যান্সিং"] <- "Private Job"
+data$Occupation[data$Occupation == "ব্যবসা"] <- "Private Job"
+data$Occupation[data$Occupation == "শিক্ষক"] <- "Govt Job"
+data$Occupation[data$Occupation == "সরকারি চাকুরি"] <- "Govt Job"
+data$Occupation[data$Occupation == "স্টুডেন্ট"] <- "Student"
+data$Occupation <- factor(data$Occupation)
+
+
+## Recoding data$Religion
+data$Religion[data$Religion == "Agnostic"] <- "Agnostic"
+data$Religion[data$Religion == "Atheist"] <- "Atheist"
+data$Religion[data$Religion == "Islam (By Born)"] <- "Islam"
+data$Religion[data$Religion == "N/A"] <- "Islam"
+data$Religion[data$Religion == "Non believer"] <- "Atheist"
+data$Religion[data$Religion == "student"] <- "Islam"
+data$Religion[data$Religion == "ইসলাম"] <- "Islam"
+data$Religion[data$Religion == "খ্রিস্টান"] <- "Christian"
+data$Religion[data$Religion == "ধর্মে অবিশ্বাসী"] <- "Atheist"
+data$Religion[data$Religion == "নাই"] <- "Atheist"
+data$Religion[data$Religion == "বৌদ্ধ"] <- "Buddha"
+data$Religion[data$Religion == "সনাতন হিন্দু"] <- "Hindu"
+data$Religion <- factor(data$Religion)
+
+## Recoding data$Relationship_status
+data$Relationship_status[data$Relationship_status == "অবিবাহিত"] <- "Unmarried"
+data$Relationship_status[data$Relationship_status == "অবিবাহিত ( একটি সম্পর্কে আছি )"] <- "Unmarried (In a relationship)"
+data$Relationship_status[data$Relationship_status == "অবিবাহিত ( একের অধিক সম্পর্কে আছি )"] <- "Unmarried (In more than one relationships)"
+data$Relationship_status[data$Relationship_status == "অবিবাহিত (সম্পর্কে নেই, কিন্তু একজনকে পছন্দ আছে)"] <- "Unmarried"
+data$Relationship_status[data$Relationship_status == "ডিভোর্সড"] <- "Divorced"
+data$Relationship_status[data$Relationship_status == "পাত্র খুঁজছি 🙂 বিয়ে করা অত্যাবশ্যক"] <- "Unmarried"
+data$Relationship_status[data$Relationship_status == "পূর্বে একটি সম্পর্কে ছিলাম কিন্তু বর্তমানে নেই।"] <- "Unmarried ( Previously in a relationship)"
+data$Relationship_status[data$Relationship_status == "বিবাহিত"] <- "Married"
+data$Relationship_status[data$Relationship_status == "বিবাহিত (কিন্তু চাকরি/কাজের জন্য স্বামী স্ত্রী ভিন্ন জায়গায় থাকি)"] <- "Married (Live separately due to work demand)"
+data$Relationship_status[data$Relationship_status == "সেপারেশনে আছি ( বিবাহিত কিন্তু পারষ্পরিক বোঝাপড়ায় সমস্যা থাকায় আলাদা থাকা হয়)"] <- "Separated"
+data$Relationship_status <- factor(data$Relationship_status)
+
+
+## Recoding data$Spous_Occupation into data$Spous_Occupation_rec
+data$Spous_Occupation <- data$Spous_Occupation
+data$Spous_Occupation[data$Spous_Occupation == "Lecturer"] <- "Private job"
+data$Spous_Occupation[data$Spous_Occupation == "Not Applicable"] <- "Not Applicable"
+data$Spous_Occupation[data$Spous_Occupation == "Private job"] <- "Private job"
+data$Spous_Occupation[data$Spous_Occupation == "Unemplyed"] <- "Student"
+data$Spous_Occupation[data$Spous_Occupation == "অবিবাহিত, তবে পার্টনার স্টুডেন্ট"] <- "Student"
+data$Spous_Occupation[data$Spous_Occupation == "করপোরেট চাকরী"] <- "Private Job"
+data$Spous_Occupation[data$Spous_Occupation == "গৃহিণী"] <- "Home maker"
+data$Spous_Occupation[data$Spous_Occupation == "নেই"] <- "Not Applicable"
+data$Spous_Occupation[data$Spous_Occupation == "ব্যবসা"] <- "Business"
+data$Spous_Occupation[data$Spous_Occupation == "সরকারি চাকরী"] <- "Govt Job"
+data$Spous_Occupation[data$Spous_Occupation == "স্টুডেন্ট"] <- "Student"
+data$Spous_Occupation <- factor(data$Spous_Occupation)
+
+## Recoding data$Family_type
+data$Family_type[data$Family_type == "Bachelor Mess"] <- "Nuclear"
+data$Family_type[data$Family_type == "I have grown in a neutral family but after my S.S.C my family members had shifted in different places.Like I live in Dhaka my sister lives in Chittagong,my mother lives in Cox's Bazar.But in vacations we go to our village home where our grand parents live .So it is really complicated to answer that do I belong to a neutral family or a joint family."] <- "Nuclear"
+data$Family_type[data$Family_type == "I live alone"] <- "Nuclear"
+data$Family_type[data$Family_type == "I live alone.away from family"] <- "Nuclear"
+data$Family_type[data$Family_type == "Living on my own"] <- "Nuclear"
+data$Family_type[data$Family_type == "Ma, bhai, vabi"] <- "Nuclear"
+data$Family_type[data$Family_type == "আমি পড়ালেখার সুবাদে এবং আমার মা বাবা কাজের সুবাদে, আমরা বর্তমানে আলাদা আলাদা ভাবে আছি । তবে ছুটির সময় গ্রামের বাড়িতে যাওয়া হয়। তবে বাড়িতেও যে যৌথ পরিবার নিয়ে আছে এমনটাও না।"] <- "Nuclear"
+data$Family_type[data$Family_type == "একক অথচ যৌথ। দাদা আমাদের সাথেই থাকেন, দাদী ছোটবেলায় মারা গিয়েছেন। একই যায়গাতে চাচা-চাচীদের সাথে থাকা হয়, কিন্তু সবাই সেপারেট। তবে আন্তরিকতায় ন্যুনতম কোনো ফাঁক নাই।"] <- "Joint"
+data$Family_type[data$Family_type == "একক পরিবার(কেবল পিতামাতা ও সন্তান নিয়ে যে পরিবার)"] <- "Nuclear"
+data$Family_type[data$Family_type == "একক পরিবারে বড় হয়েছি, বর্তমানে মেসে থাকি"] <- "Nuclear"
+data$Family_type[data$Family_type == "একা, অপিরিচিত ফ্ল্যাটমেটদের সাথে"] <- "Nuclear"
+data$Family_type[data$Family_type == "কোনো পরিবারে বসবাস করি না, ছোটবেলা থেকেই শুধুমাত্র আমি আর নানু।"] <- "Nuclear"
+data$Family_type[data$Family_type == "নিজের ফ্যামিলী ও ভাই, বোন  বোনের ফ্যামিলী"] <- "Nuclear"
+data$Family_type[data$Family_type == "পরিবারে বসবাস করি না ...কোনো পরিবার নাই"] <- "Nuclear"
+data$Family_type[data$Family_type == "বর্তমানে মামার বাসায় আছি পড়াশোনার কারনে এমনিতে মা আর ছোট দুইটা বোনকে নিয়ে থাকি।বাবা বিদেশে😞🥲"] <- "Nuclear"
+data$Family_type[data$Family_type == "বাবা, ভাইয়া"] <- "Nuclear"
+data$Family_type[data$Family_type == "বোন এর সাথে"] <- "Nuclear"
+data$Family_type[data$Family_type == "মা ও নানা-নানির সাথে"] <- "Nuclear"
+data$Family_type[data$Family_type == "যৌথ অনেকটা (চাচা-চাচীসহ চাচাত ভাইবোন, পিতা-মাতা।দুটা জয়েন পরিবার)"] <- "Joint"
+data$Family_type[data$Family_type == "যৌথ পরিবার (যেমন :আপনার পিতা-মাতা, দাদা-দাদী সবার সাথে একত্রে বাস )"] <- "Joint"
+data$Family_type[data$Family_type == "হ"] <- "Nuclear"
+data$Family_type <- factor(data$Family_type)
+
+
+## Recoding data$Birth_order
+data$Birth_order[data$Birth_order == "01"] <- "1"
+data$Birth_order[data$Birth_order == "02"] <- "2"
+data$Birth_order[data$Birth_order == "03"] <- "3"
+data$Birth_order[data$Birth_order == "0th"] <- "1"
+data$Birth_order[data$Birth_order == "1 st"] <- "1"
+data$Birth_order[data$Birth_order == "1.0"] <- "1"
+data$Birth_order[data$Birth_order == "1st"] <- "1"
+data$Birth_order[data$Birth_order == "1st (single child)"] <- "1"
+data$Birth_order[data$Birth_order == "1st and Last"] <- "1"
+data$Birth_order[data$Birth_order == "1st child"] <- "1"
+data$Birth_order[data$Birth_order == "1st one"] <- "1"
+data$Birth_order[data$Birth_order == "১ম"] <- "1"
+data$Birth_order[data$Birth_order == "১ম সন্তান"] <- "1"
+data$Birth_order[data$Birth_order == "2.0"] <- "2"
+data$Birth_order[data$Birth_order == "2nd"] <- "2"
+data$Birth_order[data$Birth_order == "2nd ( last)"] <- "2"
+data$Birth_order[data$Birth_order == "2nd(middle)"] <- "2"
+data$Birth_order[data$Birth_order == "২য়"] <- "2"
+data$Birth_order[data$Birth_order == "২য়"] <- "2"
+data$Birth_order[data$Birth_order == "২য়।"] <- "2"
+data$Birth_order[data$Birth_order == "3.0"] <- "3"
+data$Birth_order[data$Birth_order == "3rd"] <- "3"
+data$Birth_order[data$Birth_order == "৩য়"] <- "3"
+data$Birth_order[data$Birth_order == "৩য়"] <- "3"
+data$Birth_order[data$Birth_order == "4 no"] <- "4"
+data$Birth_order[data$Birth_order == "4.0"] <- "4"
+data$Birth_order[data$Birth_order == "4th"] <- "4"
+data$Birth_order[data$Birth_order == "৪র্থ"] <- "4"
+data$Birth_order[data$Birth_order == "৪র্থ/ কনিষ্ঠ"] <- "4"
+data$Birth_order[data$Birth_order == "5.0"] <- "5"
+data$Birth_order[data$Birth_order == "5th"] <- "5"
+data$Birth_order[data$Birth_order == "6.0"] <- "6"
+data$Birth_order[data$Birth_order == "6th"] <- "6"
+data$Birth_order[data$Birth_order == "৬ষ্ঠ"] <- "6"
+data$Birth_order[data$Birth_order == "7.0"] <- "7"
+data$Birth_order[data$Birth_order == "৭তম"] <- "7"
+data$Birth_order[data$Birth_order == "৭ম"] <- "7"
+data$Birth_order[data$Birth_order == "Ekmatro"] <- "1"
+data$Birth_order[data$Birth_order == "Father's 2nd , Mother's 1st"] <- "2"
+data$Birth_order[data$Birth_order == "Father's 2nd mother's 1st"] <- "Father's 2nd mother's 1st2"
+data$Birth_order[data$Birth_order == "first"] <- "1"
+data$Birth_order[data$Birth_order == "First"] <- "1"
+data$Birth_order[data$Birth_order == "Last"] <- "2"
+data$Birth_order[data$Birth_order == "One and only"] <- "1"
+data$Birth_order[data$Birth_order == "Only child"] <- "1"
+data$Birth_order[data$Birth_order == "Prothom"] <- "1"
+data$Birth_order[data$Birth_order == "second"] <- "2"
+data$Birth_order[data$Birth_order == "Second"] <- "2"
+data$Birth_order[data$Birth_order == "single child"] <- "1"
+data$Birth_order[data$Birth_order == "Third"] <- "3"
+data$Birth_order[data$Birth_order == "একমাত্র"] <- "1"
+data$Birth_order[data$Birth_order == "একমাত্র৷"] <- "1"
+data$Birth_order[data$Birth_order == "চতুর্থ"] <- "4"
+data$Birth_order[data$Birth_order == "ততগহহ"] <- "3"
+data$Birth_order[data$Birth_order == "তৃতীয়"] <- "3"
+data$Birth_order[data$Birth_order == "তৃতীয়"] <- "3"
+data$Birth_order[data$Birth_order == "দ্বিতীয়"] <- "2"
+data$Birth_order[data$Birth_order == "দ্বিতীয়"] <- "2"
+data$Birth_order[data$Birth_order == "নবম"] <- "9"
+data$Birth_order[data$Birth_order == "প্রথম"] <- "1"
+data$Birth_order[data$Birth_order == "প্রথম ও একমাত্র ছেলে সন্তান"] <- "1"
+data$Birth_order[data$Birth_order == "প্রথম সন্তান"] <- "1"
+data$Birth_order[data$Birth_order == "বড় মেয়ে"] <- "1"
+data$Birth_order[data$Birth_order == "সবার ছোট"] <- "3"
+data$Birth_order <- factor(data$Birth_order)
+
+
+## Recoding data$Sexual_orientation into data$Sexual_orientation_rec
+data$Sexual_orientation_rec <- data$Sexual_orientation
+data$Sexual_orientation_rec[data$Sexual_orientation == "heterosexual but don’t have that much attraction toward opposite gender, which others generally have in my age of my gender. I mean, I think I have little asexuality."] <- "Asexual"
+data$Sexual_orientation_rec[data$Sexual_orientation == "Karo kono behavior jodi pochondo hoi tar proti akta shavabik vlo laga kaj kore."] <- "Heterosexual"
+data$Sexual_orientation_rec[data$Sexual_orientation == "Only attracted to my partner"] <- "Heterosexual"
+data$Sexual_orientation_rec[data$Sexual_orientation == "উভকামী (bisexual;উভয় লিঙ্গের প্রতি যৌন আকর্ষণ )"] <- "Bisexual"
+data$Sexual_orientation_rec[data$Sexual_orientation == "নিষ্কামিতা (asexual; Male বা মহিলার প্রতি  যৌন আকর্ষণের  অনুপস্থিতি)"] <- "Asexual"
+data$Sexual_orientation_rec[data$Sexual_orientation == "বিষমকামী (Heterosexual;বিপরীত লিঙ্গের প্রতি যৌন আকর্ষণ)"] <- "Heterosexual"
+data$Sexual_orientation_rec[data$Sexual_orientation == "সমকামী (homosexual; একই লিঙ্গের প্রতি যৌন আকর্ষণ)"] <- "Homosexual"
+data$Sexual_orientation_rec <- factor(data$Sexual_orientation_rec)
+
+data$Income_monthy <- as.numeric(data$Income_monthy)
+
+
+
+## Recoding data$Education into data$Education_year
+data$Education_year <- as.character(data$Education)
+data$Education_year[data$Education == "HSC"] <- "12"
+data$Education_year[data$Education == "PhD"] <- "22"
+data$Education_year[data$Education == "Postgrad"] <- "18"
+data$Education_year[data$Education == "SSC"] <- "10"
+data$Education_year[data$Education == "Undergrad"] <- "16"
+data$Education_year <- as.numeric(data$Education_year)
+
+
+
+## Recoding data$Relationship_status into data$Relationship_status_simplified
+data$Relationship_status_simplified <- as.character(data$Relationship_status)
+data$Relationship_status_simplified[data$Relationship_status == "Divorced"] <- "Divorced"
+data$Relationship_status_simplified[data$Relationship_status == "Married"] <- "Married"
+data$Relationship_status_simplified[data$Relationship_status == "Married (Live separately due to work demand)"] <- "Married"
+data$Relationship_status_simplified[data$Relationship_status == "Separated"] <- "Separated"
+data$Relationship_status_simplified[data$Relationship_status == "Unmarried"] <- "Unmarried"
+data$Relationship_status_simplified[data$Relationship_status == "Unmarried ( Previously in a relationship)"] <- "Unmarried"
+data$Relationship_status_simplified[data$Relationship_status == "Unmarried (In a relationship)"] <- "Unmarried"
+data$Relationship_status_simplified[data$Relationship_status == "Unmarried (In more than one relationships)"] <- "Unmarried"
+data$Relationship_status_simplified <- factor(data$Relationship_status_simplified)
+
+
+Self_esteem <- data %>% 
+  dplyr::select(SE01:SE10)
+
+EI <- data %>% 
+  dplyr::select(EI01:EI34)
+
+PANAS <- data %>% 
+  dplyr::select(Interested:Afraid)
+Aggression <- data %>% 
+  dplyr::select(AG01:AG27)
+GASP <- data %>% 
+  dplyr::select (GS01:GS06, GS07, GS08:GS16)
+
+
+#Recode Self estem
+
+
+
+
+se_code <- c("দৃঢ়ভাবে একমত"=3,
+                 "একমত"=2,
+                 "একমত নই" =1,
+                 "দৃঢ়ভাবে একমত নই" =0)
+
+recod_se <- as.data.frame( mutate(Self_esteem, across(starts_with("SE"), ~unname(se_code[.]))))
+
+# Reverse:SE03R,SE05R,SE08R,SE09R,SE10R
+## Recoding recod_se$SE03
+recod_se$SE03 <- as.character(recod_se$SE03)
+recod_se$SE03[recod_se$SE03 == "0"] <- "3"
+recod_se$SE03[recod_se$SE03 == "1"] <- "3"
+recod_se$SE03[recod_se$SE03 == "2"] <- "1"
+recod_se$SE03[recod_se$SE03 == "3"] <- "0"
+recod_se$SE03 <- as.numeric(recod_se$SE03)
+
+## Recoding recod_se$SE05
+recod_se$SE05 <- as.character(recod_se$SE05)
+recod_se$SE05[recod_se$SE05 == "0"] <- "3"
+recod_se$SE05[recod_se$SE05 == "1"] <- "3"
+recod_se$SE05[recod_se$SE05 == "2"] <- "1"
+recod_se$SE05[recod_se$SE05 == "3"] <- "0"
+recod_se$SE05 <- as.numeric(recod_se$SE05)
+## Recoding recod_se$SE08
+recod_se$SE08 <- as.character(recod_se$SE08)
+recod_se$SE08[recod_se$SE08 == "0"] <- "3"
+recod_se$SE08[recod_se$SE08 == "1"] <- "3"
+recod_se$SE08[recod_se$SE08 == "2"] <- "1"
+recod_se$SE08[recod_se$SE08 == "3"] <- "0"
+recod_se$SE08 <- as.numeric(recod_se$SE08)
+## Recoding recod_se$SE09
+recod_se$SE09 <- as.character(recod_se$SE09)
+recod_se$SE09[recod_se$SE09 == "0"] <- "3"
+recod_se$SE09[recod_se$SE09 == "1"] <- "3"
+recod_se$SE09[recod_se$SE09 == "2"] <- "1"
+recod_se$SE09[recod_se$SE09 == "3"] <- "0"
+recod_se$SE09 <- as.numeric(recod_se$SE09)
+
+## Recoding recod_se$SE10
+recod_se$SE10 <- as.character(recod_se$SE10)
+recod_se$SE10[recod_se$SE10 == "0"] <- "3"
+recod_se$SE10[recod_se$SE10 == "1"] <- "3"
+recod_se$SE10[recod_se$SE10 == "2"] <- "1"
+recod_se$SE10[recod_se$SE10 == "3"] <- "0"
+recod_se$SE10 <- as.numeric(recod_se$SE10)
+
+
+
+self_esteem_total <- recod_se %>% 
+  mutate(total_SE= rowSums(across(starts_with("SE")), na.rm = T))
+
+
+#Recode EI
+
+ei_code <- c("সম্পূর্ণ সমর্থন করি"=5,
+             "সমর্থন করি"=4,
+                 "অনিশ্চিত" =3,
+                 "সমর্থন করি না" =2,
+             "একেবারেই সমর্থন করি না"=1)
+
+recode_ei <- as.data.frame( mutate(EI, across(starts_with("EI"), ~unname(ei_code[.]))))
+
+
+EI_total <- recode_ei %>% 
+  mutate(total_EI= rowSums(across(starts_with("EI")), na.rm = T))
+
+
+# Recode PANAS
+prefix <- "item"
+sufix <- c(1:20)
+colnam <- paste(prefix,sufix, sep="" )
+
+colnames(PANAS) <-colnam
+
+panas_code <- c("অনেক বেশি"=5,
+             "একটু বেশি"=4,
+                 "মোটামুটি" =3,
+                 "কিছুটা" =2,
+             "একেবারেই না"=1)
+
+recode_panas <- as.data.frame( mutate(PANAS, across(starts_with("item"), ~unname(panas_code[.]))))
+
+
+panas_total <- recode_panas %>% 
+  rowwise() %>% 
+  mutate(total_pa= sum(item1,item3,item5,item9,item10,item12,item13,item16,item17 , item19, na.rm = T),
+total_na= sum(item2 , item4 , item6 , item7 , item8 , item11 , item14 , item15 , item18 , item20, na.rm = T))
+
+
+#Recode Aggression
+
+agg_code <- c("সম্পূর্ণ একমত"=5,
+             "কিছুটা একমত"=4,
+                 "একমত নই ভিন্নমতও নই" =3,
+                 "কিছুটা ভিন্নমত" =2,
+             "সম্পূর্ণ ভিন্নমত"=1)
+
+recode_agg <- as.data.frame( mutate(Aggression, across(starts_with("AG"), ~unname(agg_code[.]))))
+
+
+## Recoding recode_agg$AG07
+recode_agg$AG07 <- as.character(recode_agg$AG07)
+recode_agg$AG07[recode_agg$AG07 == "1"] <- "5"
+recode_agg$AG07[recode_agg$AG07 == "2"] <- "4"
+recode_agg$AG07[recode_agg$AG07 == "3"] <- "3"
+recode_agg$AG07[recode_agg$AG07 == "4"] <- "2"
+recode_agg$AG07[recode_agg$AG07 == "5"] <- "1"
+recode_agg$AG07 <- as.numeric(recode_agg$AG07)
+
+## Recoding recode_agg$AG14
+recode_agg$AG14 <- as.character(recode_agg$AG14)
+recode_agg$AG14[recode_agg$AG14 == "1"] <- "5"
+recode_agg$AG14[recode_agg$AG14 == "2"] <- "4"
+recode_agg$AG14[recode_agg$AG14 == "3"] <- "3"
+recode_agg$AG14[recode_agg$AG14 == "4"] <- "2"
+recode_agg$AG14[recode_agg$AG14 == "5"] <- "1"
+recode_agg$AG14 <- as.numeric(recode_agg$AG14)
+
+aggression_total <- recode_agg %>% 
+  rowwise() %>% 
+  mutate(AG_physical= sum(AG03,AG06,AG09,AG11,AG14,AG20,AG23,AG27
+, na.rm = T),
+AG_va= sum(AG04,AG12,AG19,AG25
+, na.rm = T),
+AG_hostility= sum(AG02,AG05,AG08,AG13,AG15,AG18,AG22,AG24
+),
+AG_anger=sum( AG01,AG07,AG10,AG16,AG17,AG21,AG26))
+
+Validity_data <- as.data.frame(cbind(self_esteem_total$total_SE, EI_total$total_EI,panas_total$total_pa, panas_total$total_na,aggression_total$AG_physical, aggression_total$AG_va, aggression_total$AG_hostility, aggression_total$AG_anger))
+
+validity_col <- c("Self_Esteem", "Emtional_Inelligence", "Positive_Affect", "Negative_Affect", "Aggression_Physical", "Aggression_VA", "Aggression_Hostility", "Aggression_Anger")
+colnames(Validity_data) <- validity_col
+
+
+```
+
+
+# Demographics
+
+```{r demographic}
+
+short_des <- data %>% 
+  dplyr::select(Age, Sex, Sexual_orientation_rec, Education:Relationship_status, Relationship_status_simplified, Education_year, Family_type,Social_stance)
+
+
+descriptives <-short_des %>%
+  tbl_summary(
+    by=Sex,
+    statistic=list(all_continuous() ~ "{mean} ({sd})",
+                     all_categorical() ~ "{n} ({p}%)"),
+    type = list(Age ~ 'continuous',
+                Education_year~ 'continuous'),
+    digits=all_continuous() ~ 2,
+    
+    missing="no"
+    ) %>% add_overall() %>% bold_labels() %>% 
+  # add_p() %>% add_q() %>%
+modify_header(label ~ "**Variable**") %>% 
+  # separate_p_footnotes() %>%
+  modify_caption("")
+```
+
+
+
+```{r}
+descriptives
+```
+
+# Descriptives
+
+```{r Attamchemt_data_recode}
+
+ATM <- data %>% 
+  dplyr::select(ATM01:ATM18)
+
+## Recoding ATM$ATM08 into ATM$RATM08
+ATM$RATM08 <- as.character(ATM$ATM08)
+ATM$RATM08[ATM$ATM08 == "1"] <- "5"
+ATM$RATM08[ATM$ATM08 == "2"] <- "4"
+ATM$RATM08[ATM$ATM08 == "3"] <- "3"
+ATM$RATM08[ATM$ATM08 == "4"] <- "2"
+ATM$RATM08[ATM$ATM08 == "5"] <- "1"
+ATM$RATM08 <- as.numeric(ATM$RATM08)
+
+## Recoding ATM$ATM13 into ATM$RATM13
+ATM$RATM13 <- as.character(ATM$ATM13)
+ATM$RATM13[ATM$ATM13 == "1"] <- "5"
+ATM$RATM13[ATM$ATM13 == "2"] <- "4"
+ATM$RATM13[ATM$ATM13 == "3"] <- "3"
+ATM$RATM13[ATM$ATM13 == "4"] <- "2"
+ATM$RATM13[ATM$ATM13 == "5"] <- "1"
+ATM$RATM13 <- as.numeric(ATM$RATM13)
+
+
+## Recoding ATM$ATM17 into ATM$RATM17
+ATM$RATM17 <- as.character(ATM$ATM17)
+ATM$RATM17[ATM$ATM17 == "1"] <- "5"
+ATM$RATM17[ATM$ATM17 == "2"] <- "4"
+ATM$RATM17[ATM$ATM17 == "3"] <- "3"
+ATM$RATM17[ATM$ATM17 == "4"] <- "2"
+ATM$RATM17[ATM$ATM17 == "5"] <- "1"
+ATM$RATM17 <- as.numeric(ATM$RATM17)
+
+
+## Recoding ATM$ATM02 into ATM$RATM02
+ATM$RATM02 <- as.character(ATM$ATM02)
+ATM$RATM02[ATM$ATM02 == "1"] <- "5"
+ATM$RATM02[ATM$ATM02 == "2"] <- "4"
+ATM$RATM02[ATM$ATM02 == "3"] <- "3"
+ATM$RATM02[ATM$ATM02 == "4"] <- "2"
+ATM$RATM02[ATM$ATM02 == "5"] <- "1"
+ATM$RATM02 <- as.numeric(ATM$RATM02)
+
+## Recoding ATM$ATM07 into ATM$RATM07
+ATM$RATM07 <- as.character(ATM$ATM07)
+ATM$RATM07[ATM$ATM07 == "1"] <- "5"
+ATM$RATM07[ATM$ATM07 == "2"] <- "4"
+ATM$RATM07[ATM$ATM07 == "3"] <- "3"
+ATM$RATM07[ATM$ATM07 == "4"] <- "2"
+ATM$RATM07[ATM$ATM07 == "5"] <- "1"
+ATM$RATM07 <- as.numeric(ATM$RATM07)
+
+## Recoding ATM$ATM18 into ATM$RATM18
+ATM$RATM18 <- as.character(ATM$ATM18)
+ATM$RATM18[ATM$ATM18 == "1"] <- "5"
+ATM$RATM18[ATM$ATM18 == "2"] <- "4"
+ATM$RATM18[ATM$ATM18 == "3"] <- "3"
+ATM$RATM18[ATM$ATM18 == "4"] <- "2"
+ATM$RATM18[ATM$ATM18 == "5"] <- "1"
+ATM$RATM18 <- as.numeric(ATM$RATM18)
+
+## Recoding ATM$ATM16 into ATM$RATM16
+ATM$RATM16 <- as.character(ATM$ATM16)
+ATM$RATM16[ATM$ATM16 == "1"] <- "5"
+ATM$RATM16[ATM$ATM16 == "2"] <- "4"
+ATM$RATM16[ATM$ATM16 == "3"] <- "3"
+ATM$RATM16[ATM$ATM16 == "4"] <- "2"
+ATM$RATM16[ATM$ATM16 == "5"] <- "1"
+ATM$RATM16 <- as.numeric(ATM$RATM16)
+```
+
+```{r missing, eval=FALSE, include=FALSE}
+missing <- VIM::aggr(ATM, plot =T)
+print(missing)
+summary(missing)
+missing.data <- which (is.na(data),arr.ind=TRUE) 
+
+```
+
+
+
+```{r gt_descriptives, include=FALSE}
+#This chunk summarizes the data for Fig2
+gt.data <- ATM %>% 
+  dplyr::select(ATM01,ATM06,RATM08,ATM12,RATM13,RATM17, ATM03,ATM04,ATM09,ATM10,ATM11,ATM15, RATM02,ATM05,RATM07,Atm14,RATM16,RATM18)
+
+gt_colname <- c("ATM01", "ATM06", "ATM08", "ATM12", "ATM13", "ATM17", "ATM03",
+             "ATM04", "ATM09", "ATM10", "ATM11", "ATM15", "ATM02", "ATM05",
+             "ATM07", "ATM14", "ATM16", "ATM18")
+
+
+colnames(gt.data) <- gt_colname
+
+
+longtab <- as.data.frame(tidyr::gather(gt.data, Items, value))
+longtab$value <- as.numeric(as.character(longtab$value))
+
+
+summary_tab <- longtab %>%
+    dplyr::group_by(Items) %>%
+    # calculate summary stats & create data for the histogram and density plot
+    dplyr::summarise(
+      nr = dplyr::n(),
+      mean = mean(value, na.rm = TRUE),
+      med = median(value, na.rm = TRUE),
+      sd = sd(value, na.rm = TRUE),
+      hist_data = list(value),
+      dens_data = list(value),
+      .groups = "drop"
+    )
+
+psych_des_data <- gt.data %>% 
+  dplyr::select(ATM01, ATM02, ATM03, ATM04, ATM05, ATM06, ATM07, ATM08, ATM09, ATM10, ATM11, ATM12, ATM13, ATM14, ATM15, ATM16, ATM17, ATM18)
+
+psych_descrptive <- psych::describeBy(psych_des_data)
+
+Skewness_raas <- psych_descrptive$skew
+Kurtosis_raas<- psych_descrptive$kurtosis
+  
+  longtab %>%longtab %>%group = 
+    dplyr::group_by(Items) %>%
+    # calculate summary stats & create data for the histogram and density plot
+    dplyr::summarise(
+      
+      .groups = "drop"
+    )
+
+
+descriptive_tab <- tabledown::des.tab(gt.data)
+
+
+
+
+summary_tab_2 <- dplyr::inner_join(summary_tab, descriptive_tab, by = "Items")
+  
+
+#Recode key
+recode_code <- c( "1" = "Not at all characteristic  of me", "2" = "slightly characteristic of me", "3"= "Neutral","4" = "moderately characteristic of me","5" = "very characteristic of me")
+
+data_likert_1 <- gt.data
+data_likert_2 <-  dplyr::mutate(data_likert_1, dplyr::across(dplyr::starts_with(c("ATM")), ~unname(recode_code[.])))
+  data_Factor_1 = as.data.frame(lapply(data_likert_2,factor, ordered = T))
+
+
+#get the items name
+  items <- names(data_Factor_1)
+  #Calculate percentage
+  percentage_1 <- kutils::likert(data_Factor_1, vlist = items )
+
+  percentage_2 <- percentage_1$table %>%
+    as.data.frame(.)
+  #data wrangling
+
+  labels<- tibble::rownames_to_column(percentage_2, "Items")
+
+  full_percentage_1<- as.data.frame(t(labels )) #transpose
+  full_percentage_2 <- full_percentage_1[,-6] #removing 1st row and total column
+  full_percentage_3 <- tibble::rownames_to_column(full_percentage_2, "Items")
+  col_names <- full_percentage_3[1,]
+  full_percentage_4 <-full_percentage_3[-1,]
+  full_percentage_5 <- as.data.frame(full_percentage_4)
+
+  colnames(full_percentage_5) <- (col_names)
+
+  full.table <-  dplyr::inner_join( summary_tab_2, full_percentage_5, by = "Items")
+
+
+
+
+full.tab_2 <- full.table %>% 
+  dplyr::select(Items, Mean, SD,Normality, Corrected.item.total.correlation,dens_data, `Not at all characteristic  of me`,
+                `slightly characteristic of me`, `Neutral`, `moderately characteristic of me`,
+                `very characteristic of me` )
+
+
+
+colnames(full.tab_2) <- c("Items",  "Mean", "SD", "SW", "Item-total correlation", "dens_data", "Not at all characteristic  of me", "Slightly characteristic of me", "Neutral", "Moderately characteristic of me", "Very characteristic of me") 
+
+
+descriptives_all <- cbind(full.tab_2,Skewness_raas, Kurtosis_raas )
+
+write_csv(descriptives_all, "Descriptives.csv")
+
+```
+
+
+
+
+```{r Fig2,  include=FALSE}
+#This chunk holds codes for creating 'gtExtra' based descriptive figures (EFA+CFA); 
+library(gtExtras)
+
+full.tab_4 <- full.tab_2 %>% gt() #Converts to gt object
+
+gt_fig <- full.tab_4 %>% 
+# histogram and density plots
+  # gtExtras::gt_plt_dist(
+  #   hist_data,
+  #   type = "histogram",
+  #   line_color = "black", 
+  #   fill_color = "#00A08799",
+  #   bw = 1,
+  #   same_limit = TRUE)%>%
+  gtExtras::gt_plt_dist(
+    dens_data,
+    type = "density",
+    line_color = "black", 
+    fill_color = "#00A08799",
+    bw = 0.75,
+    same_limit = TRUE
+  )%>%
+# format decimals
+  # fmt_number(columns = Mean:SD, decimals = 1) %>%
+# header
+  tab_header(
+    title = md("Summary Descriptives (n=513)"),
+    ) %>% #create groups of columns
+ 
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = Mean:`Item-total correlation`
+  ) %>%
+  tab_spanner(
+    label = "Graphics",
+    columns = dens_data
+  ) %>% 
+  tab_spanner(
+    label = "Response Pattern",
+    columns = `Not at all characteristic  of me`:`Very characteristic of me`
+  ) %>%
+     tab_footnote(
+     footnote = md("**Shapiro–Wilk test; *p<0.001**"),
+     locations = cells_column_labels(columns = `SW`)
+  ) %>% 
+  tab_footnote(
+     footnote = md("**%(n)**"),
+     locations = cells_column_labels(columns = `Not at all characteristic  of me`:`Very characteristic of me`)
+  ) %>% 
+# change column names to appear in the table
+cols_label(
+  Items = ("Items"),
+  Mean = ("Mean"),
+  SD = ("SD"),
+  `Item-total correlation` = ("Item-Total Correlation"),
+  
+  # hist_data = "Histogram",
+  dens_data = "Density"
+)  %>% 
+# set alignment as per wish
+  cols_align(
+    align = "center",
+    columns = Mean: `Very characteristic of me`
+  ) %>%
+  opt_align_table_header(align = "left") %>%
+# add coloured dots and lines on the first column
+  gt_plt_dot(
+    Mean,
+    Items,
+    palette = "ggthemes::fivethirtyeight"
+  ) %>% tab_options(
+    table.font.size = px(30L)) %>%
+   tab_row_group(
+      label = md("**Anxeity**"),
+      rows = c(2,5,7,14,16,18)
+        ) %>% 
+tab_row_group(
+      label = md("**Dependent**"),
+      rows = c(3,4,9,10,11,15)
+        ) %>%
+    tab_row_group(
+      label = md("**Close**"),
+      rows = c(4 ,6,8,12,13,17)
+        )
+
+
+
+%>%
+
+ gtsave("Figures/PNG/Fig2.png", vwidth = 3000)
+
+
+```
+
+
+
+```{r samplesize, include=F}
+#Simulation to estimate required sample size for CFA
+library(semPower)
+lavmodel <-  "Close =~ATM01+ATM06+RATM08+ATM12+RATM13+RATM17
+            
+          Dependent =~  ATM03+ATM04+ATM09+ATM10+ATM11+ATM15 
+          
+          Anxiety =~ RATM02+ATM05+RATM07+Atm14+RATM16+RATM18"
+
+df <- semPower::semPower.getDf(lavmodel)
+ap <- semPower::semPower.aPriori(effect = .05, effect.measure = 'RMSEA', 
+                                 alpha = .05, 
+                                 power = .80, 
+                                 df = df) 
+summary(ap)
+
+```
+
+
+```{r CFA}
+
+model <- "Close =~ATM01+ATM06+RATM08+ATM12+RATM13+RATM17
+            
+           Anxiety =~  ATM03+ATM04+ATM09+ATM10+ATM11+ATM15 
+          
+          Dependent =~ RATM02+ATM05+RATM07+Atm14+RATM16+RATM18"
+
+
+fit.org <- lavaan::cfa(model, data= ATM, mimic = "Mplus",ordered = names(ATM),
+                   estimator = "WLSMV")
+
+
+
+
+## Summary of Model 
+summary(fit.org, fit.measures =TRUE,standardized = TRUE,rsq =TRUE)
+
+reliability.org <- semTools::reliability(fit.org, return.total = T)
+
+
+
+model_H <- "Close =~ATM01+ATM06+RATM08+ATM12+RATM13+RATM17
+            
+           Anxiety =~  ATM03+ATM04+ATM09+ATM10+ATM11+ATM15 
+          
+          Dependent =~ RATM02+ATM05+RATM07+Atm14+RATM16+RATM18
+Attachment =~ Close+Dependent+Anxiety"
+
+fit_H <- lavaan::cfa(model_H, data= ATM, mimic = "Mplus",ordered = names(ATM),
+                   estimator = "WLSMV")
+
+## Summary of Model 
+summary(fit_H, fit.measures =TRUE,standardized = TRUE,rsq =TRUE)
+
+
+
+
+# Excluding item17, 02, 05-Final model
+
+model_refit <- "Close =~ATM01+ATM06+RATM08+ATM12+RATM13
+            
+           Anxiety =~  ATM03+ATM04+ATM09+ATM10+ATM11+ATM15 
+          
+          Dependent =~ RATM07+Atm14+RATM16+RATM18"
+
+
+fit_refit <- lavaan::cfa(model_refit, data= ATM, mimic = "Mplus",ordered = names(ATM),
+                   estimator = "WLSMV")
+
+## Summary of Model 
+summary(fit_refit, fit.measures =TRUE,standardized = TRUE,rsq =TRUE)
+
+reliability.org <- semTools::reliability(fit.org, return.total = T)
+```
+
+
+
+## Item Response Theory Based Item Analysis
+
+
+```{r IRT,include=FALSE}
+
+
+
+raas <- ATM %>% 
+  dplyr::select(ATM01,ATM06,RATM08,ATM12,RATM13,
+                ATM03,ATM04,ATM09,ATM10,ATM11,ATM15,
+                RATM07,Atm14,RATM16,RATM18)
+
+close_data <- raas %>% 
+  dplyr::select(ATM01,ATM06,RATM08,ATM12,RATM13)
+
+anxiety_data<- raas %>% 
+  dplyr::select(ATM03,ATM04,ATM09,ATM10,ATM11,ATM15)
+
+dependent_data<- raas %>% 
+  dplyr::select(RATM07,Atm14,RATM16,RATM18)
+
+
+
+#Subscale model fit
+close.fit <- mirt(close_data , model = 1, itemtype = 'graded', 
+               SE = TRUE, Se.type = 'MHRM',
+               technical = list(NCYCLES = 10000))
+anxiety.fit <- mirt(anxiety_data , model = 1, itemtype = 'graded', 
+               SE = TRUE, Se.type = 'MHRM',
+               technical = list(NCYCLES = 10000))
+dependent.fit <- mirt(dependent_data , model = 1, itemtype = 'graded', 
+               SE = TRUE, Se.type = 'MHRM',
+               technical = list(NCYCLES = 10000))
+## Model Parameters ####
+close.params <- coef(close.fit, IRTpars = TRUE, simplify = TRUE, rawug = FALSE) 
+close.items <- data.frame(close.params$items)
+close.se <- coef(close.fit, printSE = TRUE)
+
+anxiety.params <- coef(anxiety.fit, IRTpars = TRUE, simplify = TRUE, rawug = FALSE) 
+anxiety.items <- data.frame(anxiety.params$items)
+anxiety.se <- coef(anxiety.fit, printSE = TRUE)
+
+
+dependent.params <- coef(dependent.fit, IRTpars = TRUE, simplify = TRUE, rawug = FALSE) 
+dependent.items <- data.frame(dependent.params $items)
+dependent.se <- coef(dependent.fit, printSE = TRUE)
+
+
+## Item fit
+#RMSEA >=.06
+
+close.item.fit<- itemfit(close.fit, fit_stats = c("S_X2", "G2","Zh", "infit"),
+                                  impute=10)
+
+
+anxiety.item.fit<- itemfit(anxiety.fit, fit_stats = c("S_X2", "G2","Zh", "infit"),
+                                  impute=10)
+
+
+dependent.item.fit<- itemfit(dependent.fit, fit_stats = c("S_X2", "G2","Zh", "infit"),
+                                  impute=10)
+
+#Identifying Missfit items based on RMSEA Value
+close.item_misfits <- subset(close.item.fit, RMSEA.S_X2 >= .06)
+anxiety.item_misfits <- subset(anxiety.item.fit, RMSEA.S_X2 >= .06)
+dependent.item_misfits <- subset(dependent.item.fit, RMSEA.S_X2 >= .06)
+
+
+
+#Creating Item fit table
+
+all.itemfit <- rbind(close.item.fit, anxiety.item.fit,dependent.item.fit )
+al.itemfit <- as.data.frame(all.itemfit)
+
+all.itemfit.selected <- all.itemfit[,c(1,11,12,14,13)]
+
+colnames(all.itemfit.selected) = c("Items",  "S-X2", "df", "p", "RMSEA" )
+
+
+#IRT Parameter table
+items.quality <- rbind(close.items,anxiety.items,dependent.items )
+
+
+IRT.details <- cbind(round(items.quality,2), round(all.itemfit.selected[2:5],2))
+
+IRT.details_1 <- rownames_to_column(IRT.details, 'Items')
+write_csv(IRT.details_1, "IRT_details.csv")
+
+#Item discrimination
+very.low <- sum(IRT.details$a >=.10 & IRT.details$a<.34, na.rm=TRUE)
+low <- sum(IRT.details$a >=.34 & IRT.details$a<.64, na.rm=TRUE)
+moderate <- sum(IRT.details$a >=.64 & IRT.details$a<1.34, na.rm=TRUE)
+high <- sum(IRT.details$a >=1.34 & IRT.details$a<1.69, na.rm=TRUE)
+very.high <- sum(IRT.details$a >=1.69, na.rm=TRUE)
+
+range(IRT.details$a)
+
+### Plots ####
+
+#Person Fit ####
+
+close.personfit <- personfit(close.fit) 
+close.personfit_model_misfits <- subset(close.personfit, Zh < -2)
+rownames(close.personfit_model_misfits)
+nrow(close.personfit_model_misfits)
+close.per.fit <- ggplot(close.personfit, aes(x=Zh)) + geom_histogram(binwidth=.6,col=I("black"), fill="#E64B3599")+ ylim(0,200) + xlim(-4,2)+geom_vline(xintercept = -2)+
+  labs( y="Number of Participants", x = "Zh Statistics:Close")+apatheme
+
+
+anxiety.personfit <- personfit(anxiety.fit) 
+anxiety.personfit_model_misfits <- subset(anxiety.personfit, Zh < -2)
+rownames(anxiety.personfit_model_misfits)
+nrow(anxiety.personfit_model_misfits)
+anxiety.per.fit <- ggplot(anxiety.personfit, aes(x=Zh)) + geom_histogram(binwidth=.6,col=I("black"),fill="#4DBBD599")+ ylim(0,200) + xlim(-4,2)+geom_vline(xintercept = -2)+
+  labs( y="Number of Participants", x = "Zh Statistics:Anxiety")+apatheme
+
+
+
+dependent.personfit <- personfit(dependent.fit) 
+dependent.personfit_model_misfits <- subset(dependent.personfit, Zh < -2)
+rownames(dependent.personfit_model_misfits)
+nrow(dependent.personfit_model_misfits)
+dependent.per.fit <- ggplot(dependent.personfit, aes(x=Zh)) + ylim(0,200) + xlim(-4,2)+ geom_histogram(binwidth=1, col=I("black"),fill="#00A08799")+geom_vline(xintercept = -2)+
+  labs( y="Number of Participants", x = "Zh Statistics:Depend")+apatheme
+
+
+personfit <- cowplot::plot_grid(close.per.fit, anxiety.per.fit, dependent.per.fit, labels = "auto",ncol=3, label_size = 40,align = "v",
+                  label_fontface = "plain")
+
+ggsave("Figures/PersonFit.png",personfit, units = "mm", width = 174, height = 80, dpi = 300, bg = "white")
+
+
+##OCC
+close.OCC <- plot(close.fit, type = "trace", facet =T, main = "Close")
+anxiety.OCC <- plot(anxiety.fit, type = "trace", facet =T, main = "Anxiety")
+dependent.OCC <- plot(dependent.fit, type = "trace", facet =T, main = "Dependent")
+
+
+OCC <- cowplot::plot_grid(close.OCC, anxiety.OCC, dependent.OCC, labels = "auto",ncol=1, label_size = 40,align = "H",
+                  label_fontface = "plain")
+
+ggsave("Figures/occ.png",OCC, units = "mm", width = 174, height = 250, dpi = 300, bg = "white")
+
+
+
+## Item information
+
+close.IIC <- plot(close.fit, type = "infotrace", facet =T, main = "Observe Item Information Curve")
+anxiety.IIC <- plot(anxiety.fit, type = "infotrace", facet =T, main = "Describe Item Information Curve")
+depedent.IIC <- plot(dependent.fit, type = "infotrace", facet =T, main = "Actwar Item Information Curve")
+
+##Test info
+
+close.TIC <- plot(close.fit, type = "infoSE", facet =T, main = "Observe Test Information Curve")
+anxiety.TIC <- plot(anxiety.fit, type = "infoSE", facet =T, main = "Describe Test Information Curve")
+dependent.TIC<- plot(dependent.fit, type = "infoSE", facet =T, main = "Awareness Test Information Curve")
+
+
+marginal.rel.close<- marginal_rxx(close.fit)
+marginal.rel.anxiety <- margina_rxx(anxiety.fit)
+marginal.rel.dependent <- marginal_rxx(dependent.fit)
+
+
+theta_se_close <- fscores(close.fit, full.scores.SE = TRUE)
+theta_se_anxiety <- fscores(anxiety.fit, full.scores.SE = TRUE)
+theta_se_dependent <- fscores(dependent.fit, full.scores.SE = TRUE)
+
+empirical.rel.close<- empirical_rxx(theta_se_close)
+empirical.rel.anxiety <- empirical_rxx(theta_se_anxiety)
+empirical.rel.dependent <- empirical_rxx(theta_se_dependent)
+
+
+# empirical_rxx(theta_se)
+
+
+library("lordif")
+
+
+
+close.DIF <- lordif(as.data.frame(close_data), as.factor(data$Sex),model = "GRM", criterion = "Chisqr")
+
+anxiety.DIF <- lordif(as.data.frame(anxiety_data), as.factor(data$Sex),model = "GRM", criterion = "Chisqr")
+
+dependent.DIF <- lordif(as.data.frame(dependent_data), as.factor(data$Sex),model = "GRM", criterion = "Chisqr")
+
+summary(raas.DIF)
+
+# 
+# gender_Stat <- raas.DIF$stats[, 1:5]
+# write_csv(gender_Stat, "gender_Stat.csv")
+
+summary(close.DIF)
+
+ppar <- raas.DIF$calib.sparse$theta
+
+close_stat <- as.data.frame(close.DIF$stats)
+anxiety_stat <- as.data.frame(anxiety.DIF$stats)
+dependent_stat <- as.data.frame(dependent.DIF$stats)
+
+dif_statistics <- dplyr::bind_rows(close_stat, anxiety_stat,dependent_stat )
+
+write_csv(dif_statistics, "dif_statistics.csv")
+
+
+
+dif_irt_properties <- rbind(close.DIF$ipar, anxiety.DIF$ipar.sparse, dependent.DIF$ipar.sparse)
+dif_irt_properties <- rownames_to_column(dif_irt_properties, "Item")
+
+write_csv(dif_irt_properties, "dif_irt_properties.csv")
+
+```
+
+
+```{r estimation, include=F}
+close.estimation <- as.vector(fscores(close.fit, method = "EAP",
+                                           full.scores = TRUE, 
+                                           full.scores.SE = F))
+
+
+anxiety.estimation <- as.vector(fscores(anxiety.fit, method = "EAP",
+                                           full.scores = TRUE, 
+                                           full.scores.SE = F))
+
+
+
+dependent.estimation <- as.vector(fscores(dependent.fit, method = "EAP",
+                                           full.scores = TRUE, 
+                                           full.scores.SE = F))
+
+
+
+```
+
+```{r occ function}
+plot_OCC_mirt <- function(mod, data, theta_range = c(-4, 4), theta_points = 100, 
+                          plot_title = "Option Characteristic Curves (OCC)", 
+                          apatheme = theme_minimal(),
+                          item_rename = NULL) {
+  require(mirt)
+  require(dplyr)
+  require(tidyr)
+  require(ggplot2)
+
+  theta_vals <- seq(theta_range[1], theta_range[2], length.out = theta_points)
+  theta_matrix <- matrix(theta_vals, ncol = 1)
+
+  item_names <- colnames(data)
+  n_items <- extract.mirt(mod, "nitems")
+
+  occ_list <- list()
+
+  for (i in 1:n_items) {
+    item_obj <- extract.item(mod, i)
+    probs <- probtrace(item_obj, Theta = theta_matrix)
+
+    df <- as.data.frame(probs)
+    df$theta <- theta_vals
+
+    df_long <- pivot_longer(df, -theta, names_to = "Category", values_to = "Probability")
+    item_label <- item_names[i]
+
+    # Rename if replacement is available
+    if (!is.null(item_rename) && item_label %in% names(item_rename)) {
+      item_label <- item_rename[[item_label]]
+    }
+
+    df_long$Item <- item_label
+    occ_list[[i]] <- df_long
+  }
+
+  occ_data <- bind_rows(occ_list)
+
+  occ_plot <- ggplot(occ_data, aes(x = theta, y = Probability, color = Category)) +
+    geom_line(size = .5) +
+    facet_wrap(~Item, scales = "free_y") +
+    labs(title = plot_title,
+         x = expression(theta),
+         y = "Probability") +
+    apatheme +
+    theme(legend.position = "bottom")
+
+  return(occ_plot)
+}
+
+```
+
+
+```{r OCCPLot}
+
+
+apatheme_occ <- theme_bw(base_size = 9) +  # smaller base font
+  theme(
+    strip.text = element_text(size = 8, face = "bold"),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7),
+    axis.title = element_text(size = 9),
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 9),
+    strip.background = element_rect(fill = "gray90"),
+    panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+  )
+
+
+item_name_map <- c(
+  "RATM08" = "ATM08",
+  "RATM13" = "ATM13",  # Note: capital "A", lowercase "m" as you specified
+  "Atm14"  = "ATM14",
+  "RATM07" = "ATM07",
+  "RATM16" = "ATM16",
+  "RATM18" = "ATM18"
+)
+
+
+close_occ_plot <- plot_OCC_mirt(
+  mod = close.fit,
+  data = close_data,
+  apatheme = apatheme_occ,
+  item_rename = item_name_map
+)
+
+anxious_occ_plot <- plot_OCC_mirt(anxiety.fit, anxiety_data, apatheme = apatheme_occ, item_rename = item_name_map)
+dependnt_occ_plot <- plot_OCC_mirt(dependent.fit, dependent_data, apatheme = apatheme_occ, item_rename = item_name_map)
+
+
+
+# Add individual titles and suppress legends for 2nd and 3rd plots
+close_occ_labeled <- close_occ_plot +
+  labs(title = "Close") +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "top")
+
+anxious_occ_labeled <- anxious_occ_plot +
+  labs(title = "Anxious") +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+
+dependnt_occ_labeled <- dependnt_occ_plot +
+  labs(title = "Dependent") +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+
+combined_occ_plot <- plot_grid(
+  close_occ_labeled,
+  anxious_occ_labeled,
+  dependnt_occ_labeled,
+  ncol = 1,       # Stack vertically
+  align = 'v', labels = "auto"
+)
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+```{r WPdata, eval=FALSE, warning=FALSE, include=FALSE}
+
+library(RColorBrewer)
+close.e <- as.data.frame(close.estimation)
+anxiety.e <- as.data.frame(anxiety.estimation)
+dependent.e <- as.data.frame(dependent.estimation)
+
+
+estimation <- as.data.frame(cbind(close.e, anxiety.e, dependent.e))
+
+
+threshold <- rbind(close.items[,2:5],
+                   anxiety.items[,2:5],
+                   dependent.items[,2:5])
+
+
+itemlevelcolors <- matrix(rep(brewer.pal(4, "Set1"), 15), byrow = TRUE, ncol = 4)
+
+```
+
+```{r Fig8, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+jpeg("Figures/person_itm.jpeg", width = 800, height = 450)
+WrightMap::wrightMap(estimation, threshold, 
+          item.prop = 0.65,
+          main.title = "",
+          dim.names = c("Close", "Anxiety", "Depend"),
+          thr.sym.col.fg = itemlevelcolors,
+          thr.sym.col.bg = itemlevelcolors,
+          vertLines = TRUE,
+          show.thr.lab = F,
+          dim.color = brewer.pal(5, "Set3"),
+          label.items.srt = 45
+          )
+
+```
+
+```{r WP, eval=FALSE, fig.cap="Person Item Map", warning=FALSE, include=FALSE, out.height="120%", out.width="100%"}
+
+knitr::include_graphics('Figures/PNG/Fig8.png')
+```
+
+```{r}
+library(tabledown)
+library(ggsci)
+
+info.item01 <- ggiteminfo(close.fit,1,6)+ggtitle("Close:Item1")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#E64B3599")
+
+info.item06 <- ggiteminfo(close.fit,1,6)+ggtitle("Close:Item06")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#E64B3599")
+
+
+info.item08 <- ggiteminfo(close.fit,3,6)+ggtitle("Close:Item08")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#E64B3599")
+
+info.item12 <- ggiteminfo(close.fit,4,6)+ggtitle("Close:Item12")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#E64B3599")
+
+info.item13 <- ggiteminfo(close.fit,5,6)+ggtitle("Close:Item13")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#E64B3599")
+
+close_iic <- cowplot::plot_grid(
+ info.item01, info.item06,info.item08,info.item12, info.item13,
+                               labels = NULL,
+                               align="v",
+                               ncol = 2,
+                               label_size = 25,
+                               label_fontfamily = "sans",
+                               label_fontface = "plain")
+
+
+ggsave("Figures/close_info.png",close_iic , units = "mm", width = 84, height = 117, dpi = 300, bg = "white")
+
+
+
+info.item03 <- ggiteminfo(anxiety.fit,1,6)+ggtitle("Anxiety:Item03")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2.5), limits = c(0, 2.5))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#4DBBD599")
+
+info.item04 <- ggiteminfo(anxiety.fit,2,6)+ggtitle("Anxiety:Item04")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#4DBBD599")
+
+info.item09 <- ggiteminfo(anxiety.fit,3,6)+ggtitle("Anxiety:Item09")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2.2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#4DBBD599")
+
+info.item10 <- ggiteminfo(anxiety.fit,4,6)+ggtitle("Anxiety:Item10")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#4DBBD599")
+
+info.item11 <- ggiteminfo(anxiety.fit,5,6)+ggtitle("Anxiety:Item11")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#4DBBD599")
+
+info.item15 <- ggiteminfo(anxiety.fit,6,6)+ggtitle("Anxiety:Item15")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#4DBBD599")
+
+
+info.item07 <- ggiteminfo(dependent.fit,1,6)+ggtitle("Depend:Item07")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#B09C8599")
+
+info.item14 <- ggiteminfo(dependent.fit,2,6)+ggtitle("Depend:Item14")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#B09C8599")
+
+info.item16 <- ggiteminfo(dependent.fit,3,6)+ggtitle("Depend:Item16")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#B09C8599")
+
+info.item18 <- ggiteminfo(dependent.fit,4,6)+ggtitle("Depend:Item18")+apatheme_icc+scale_color_npg()+
+scale_y_continuous(breaks=c(0,.5,2), limits = c(0, 2))+theme(legend.position="none")+
+  xlab(expression(theta)) + 
+  ylab(expression(I(theta)))+geom_hline(yintercept = .20, linetype="dashed")+ geom_area(fill =  "#B09C8599")
+
+
+all_iic <- cowplot::plot_grid(
+ info.item01, info.item06,info.item08,info.item12, info.item13,
+ info.item03, info.item04, info.item09, info.item10, info.item11, info.item15, info.item07, info.item14, info.item16, info.item18,
+                                labels = NULL,
+                               align="v",
+                               ncol = 5,
+                               label_size = 18,
+                               label_fontfamily = "sans",
+                               label_fontface = "plain")
+
+
+
+ggsave("Figures/all_icc.png",all_iic , units = "mm", width = 174, height = 234, dpi = 600, bg = "white")
+
+ggsave("Figures/all_icc_2.jpeg",all_iic , units = "mm", width = 300, height = 234, dpi = 300, bg = "white")
+
+```
+
+
+```{r}
+close.TIC.1 <- tabledown::ggtestinfo_se(close_data, close.fit)+apatheme+geom_area()+theme(legend.position = "none")+
+  aes(fill =  "#E64B3599")+scale_fill_identity() +ylim(0,10)+xlab(expression(theta)) + 
+  ylab(expression(I(theta)))
+
+
+
+anxiety.TIC.1 <- tabledown::ggtestinfo_se(anxiety_data, anxiety.fit)+apatheme+
+  geom_area()+aes(fill =  "#4DBBD599")+theme(legend.position = "none")+
+     scale_fill_identity()+ylim(0,10)+xlab(expression(theta)) + 
+  ylab(expression(I(theta)))
+
+dependent.TIC.1 <- tabledown::ggtestinfo_se(dependent_data, dependent.fit)+apatheme+
+  geom_area()+aes(fill =  "#00A08799")+theme(legend.position = "none")+
+     scale_fill_identity()+ylim(0,10)+xlab(expression(theta)) + 
+  ylab(expression(I(theta)))
+
+TIC.plot <- cowplot::plot_grid(close.TIC.1,anxiety.TIC.1,dependent.TIC.1,
+                   labels = "auto",
+                     align="v",
+                     ncol = 3,
+                     label_size = 40,
+                     # label_fontfamily = "Arial",
+                     label_fontface = "plain")
+ggsave("Figures/TIC.jpeg",TIC.plot, units = "mm", width = 174, height = 80, dpi = 300, bg = "white")
+```
+
+
+```{r plotly}
+close.TIC.2 <- tabledown::ggtestinfo_se_ploty(close_data, close.fit)
+
+anxiety.TIC.1 <- tabledown::ggtestinfo_se_ploty(anxiety_data, anxiety.fit)
+
+dependent.TIC.1 <- tabledown::ggtestinfo_se_ploty(dependent_data, dependent.fit)
+
+```
+
+
+```{r}
+#Three-dimensional model fit
+Gender <- data$Sex
+Irt_data <- cbind (Gender, raas)
+write_csv(Irt_data, "IRT_data.csv")
+
+model <- "Close =ATM01,ATM06,RATM08,ATM12,RATM13
+            
+            Anxiety = ATM03,ATM04,ATM09,ATM10,ATM11,ATM15
+          
+           Dependent = RATM07,Atm14,RATM16,RATM18
+COV=Close*Dependent*Anxiety"
+
+
+rass_irt_fit <- mirt(raas, model = model, itemtype = 'graded', 
+               SE = TRUE, Se.type = 'MHRM',
+               technical = list(NCYCLES = 10000))
+
+
+
+itemplot(rass_irt_fit, type = "trace", item=1)
+itemplot(rass_irt_fit, type="info", item = 13)
+
+itemplot(rass_irt_fit, type = "score", item = 13)
+itemplot(rass_irt_fit, type = "SE", item = 13)
+
+plot(rass_irt_fit, type = "info")
+plot(rass_irt_fit, type = "SE")
+
+
+
+
+extract.mirt(rass_irt_fit, what="time") 
+coef(rass_irt_fit, simplify=T)
+coef(rass_irt_fit, printSE=T) 
+
+
+
+mgrm_items <- as.data.frame(cbind(MDISC(rass_irt_fit),MDIFF(rass_irt_fit)))
+
+mgrm_items_numeric <- as.data.frame(lapply(mgrm_items, as.numeric))
+mgrm_items_round <- round(mgrm_items_numeric,2)
+mgrm_items_name <- tibble::rownames_to_column(mgrm_items_round , "item")
+
+
+fscores(rass_irt_fit, method="EAP", full.scores=T, full.scores.SE = T)
+
+
+M2(rass_irt_fit)
+
+
+
+#Item fit
+raas.item.fit<- itemfit(rass_irt_fit, fit_stats = c("S_X2",  "infit"),impute=10)
+
+raas.item_misfits <- subset(raas.item.fit, RMSEA.S_X2 >= .06)
+raas.item_misfits_infit_adam_khoo <- subset(raas.item.fit, infit  >= 1.33|infit  <= 0.75 )
+raas.item_misfits_infit_Bond_fox <- subset(raas.item.fit, z.infit  >= 2| z.infit  <= -2 )
+
+
+
+IRT_indices <- mgrm_items_name %>% 
+  inner_join(raas.item.fit, "item")
+write_csv(IRT_indices, "IRT_indices.csv")
+
+
+# all.itemfit.selected <- ghq.item.fit[,c(1,11,12,13,14)]
+
+# colnames(all.itemfit.selected) = c("Items",  "S-X2", "df", "RMSEA", "p" )
+# 
+# IRT.details <- cbind(round(ghq_items,2), (all.itemfit.selected))
+# IRT.details_1 <- IRT.details[,c(5, 1:4, 6:7,9,8)]
+
+
+# marginal.rel.ghq <- reliability(rass_irt_fit)
+
+
+```
+
+
+# Reliability
+
+```{r reliability}
+# Subset the data for each dimension
+close_items <- raas[, c("ATM01", "ATM06", "RATM08", "ATM12", "RATM13")]
+ anxiety_items <- raas[, c("ATM03", "ATM04", "ATM09", "ATM10", "ATM11", "ATM15")]
+dependent_items <- raas[, c("RATM07", "Atm14", "RATM16", "RATM18")]
+
+# Calculate McDonald's omega for the 'Close' dimension
+omega_close <- omega(close_items, nfactors = 1)
+print(omega_close)
+
+# Calculate McDonald's omega for the 'Dependent' dimension
+omega_dependent <- omega(dependent_items, nfactors = 1)
+print(omega_dependent)
+
+# Calculate McDonald's omega for the 'Anxiety' dimension
+omega_anxiety <- omega(anxiety_items, nfactors = 1)
+print(omega_anxiety)
+
+
+
+physical_item <- recode_agg %>% 
+  dplyr::select(AG03,AG06,AG09,AG11,AG14,AG20,AG23,AG27)
+varbal_item<- recode_agg %>% 
+  dplyr::select(AG04,AG12,AG19,AG25)
+hostility_item<- recode_agg %>% 
+  dplyr::select(AG02,AG05,AG08,AG13,AG15,AG18,AG22,AG24)
+anger_item <- recode_agg %>% 
+  dplyr::select(AG01,AG07,AG10,AG16,AG17,AG21,AG26)
+
+
+
+
+
+pa_item <- recode_panas %>% 
+  dplyr::select(item1,item3,item5,item9,item10,item12,item13,item16,item17 , item19)
+
+neg_items <- recode_panas %>% 
+  dplyr::select(item2 , item4 , item6 , item7 , item8 , item11 , item14 , item15 , item18 , item20)
+
+
+
+omega_rses <- omega(recod_se, nfactor=1)
+print(omega_rses)
+
+omega_pa <- omega(pa_item, nfactors=1)
+print(omega_pa)
+
+omega_neg <- omega(neg_items, nfactors=1)
+print(omega_neg)
+
+omega_physical <- omega(physical_item, nfactors=1)
+print(omega_physical)
+
+omega_varbal <- omega(varbal_item, nfactors=1)
+print(omega_varbal)
+
+
+omega_hostility <- omega(hostility_item, nfactors=1)
+print(omega_hostility)
+
+
+omega_anger <- omega(anger_item, nfactors=1)
+print(omega_anger)
+
+```
+
+
+
+```{r test_retest}
+
+test_retest <- readxl::read_excel("Processeddata/Test_retestexcel.xlsx")
+
+test_retest_descriptives <- test_retest %>% 
+  dplyr::select(Age:SES)
+
+test_retest_descriptives$SES <- as.numeric(test_retest_descriptives$SES)
+
+## Reordering test_retest_descriptives$Relationship
+test_retest_descriptives$Relationship <- test_retest_descriptives$Relationship %>%
+  fct_relevel(
+    "Unmarried", "Unmarried (in a relationship)", "Married", "Married (Stay separately due to work)",
+    "Divorced"
+  )
+
+## Recoding test_retest_descriptives$Relationship into test_retest_descriptives$Relationship_simp
+test_retest_descriptives$Relationship_simp <- as.character(test_retest_descriptives$Relationship)
+test_retest_descriptives$Relationship_simp[test_retest_descriptives$Relationship == "Unmarried"] <- "Unmarried"
+test_retest_descriptives$Relationship_simp[test_retest_descriptives$Relationship == "Unmarried (in a relationship)"] <- "Unmarried"
+test_retest_descriptives$Relationship_simp[test_retest_descriptives$Relationship == "Married"] <- "Married"
+test_retest_descriptives$Relationship_simp[test_retest_descriptives$Relationship == "Married (Stay separately due to work)"] <- "Married"
+test_retest_descriptives$Relationship_simp[test_retest_descriptives$Relationship == "Divorced"] <- "Divorced"
+test_retest_descriptives$Relationship_simp <- factor(test_retest_descriptives$Relationship_simp)
+
+
+
+
+test_test_descriptives<-test_retest_descriptives %>%
+  tbl_summary(
+    by=Gender,
+    statistic=list(all_continuous() ~ "{mean} ({sd})",
+                     all_categorical() ~ "{n} ({p}%)"),
+    type = list(Age ~ 'continuous',
+                SES ~ 'continuous'),
+    digits=all_continuous() ~ 2,
+    
+    missing="no"
+    ) %>% add_overall() %>% bold_labels() %>% 
+  # add_p() %>% add_q() %>%
+modify_header(label ~ "**Variable**") %>% 
+  # separate_p_footnotes() %>%
+  modify_caption("")
+
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM08_T1 <- as.character(test_retest$ATM08_T1)
+test_retest$RATM08_T1[test_retest$ATM08_T1 == "1"] <- "5"
+test_retest$RATM08_T1[test_retest$ATM08_T1 == "2"] <- "4"
+test_retest$RATM08_T1[test_retest$ATM08_T1 == "3"] <- "3"
+test_retest$RATM08_T1[test_retest$ATM08_T1 == "4"] <- "2"
+test_retest$RATM08_T1[test_retest$ATM08_T1 == "5"] <- "1"
+test_retest$RATM08_T1 <- as.numeric(test_retest$RATM08_T1)
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM13_T1 <- as.character(test_retest$ATM13_T1)
+test_retest$RATM13_T1[test_retest$ATM13_T1 == "1"] <- "5"
+test_retest$RATM13_T1[test_retest$ATM13_T1 == "2"] <- "4"
+test_retest$RATM13_T1[test_retest$ATM13_T1 == "3"] <- "3"
+test_retest$RATM13_T1[test_retest$ATM13_T1 == "4"] <- "2"
+test_retest$RATM13_T1[test_retest$ATM13_T1 == "5"] <- "1"
+test_retest$RATM13_T1 <- as.numeric(test_retest$RATM13_T1)
+
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM17_T1 <- as.character(test_retest$ATM17_T1)
+test_retest$RATM17_T1[test_retest$ATM17_T1 == "1"] <- "5"
+test_retest$RATM17_T1[test_retest$ATM17_T1 == "2"] <- "4"
+test_retest$RATM17_T1[test_retest$ATM17_T1 == "3"] <- "3"
+test_retest$RATM17_T1[test_retest$ATM17_T1 == "4"] <- "2"
+test_retest$RATM17_T1[test_retest$ATM17_T1 == "5"] <- "1"
+test_retest$RATM17_T1 <- as.numeric(test_retest$RATM17_T1)
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM02_T1 <- as.character(test_retest$ATM02_T1)
+test_retest$RATM02_T1[test_retest$ATM02_T1 == "1"] <- "5"
+test_retest$RATM02_T1[test_retest$ATM02_T1 == "2"] <- "4"
+test_retest$RATM02_T1[test_retest$ATM02_T1 == "3"] <- "3"
+test_retest$RATM02_T1[test_retest$ATM02_T1 == "4"] <- "2"
+test_retest$RATM02_T1[test_retest$ATM02_T1 == "5"] <- "1"
+test_retest$RATM02_T1 <- as.numeric(test_retest$RATM02_T1)
+
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM07_T1 <- as.character(test_retest$ATM07_T1)
+test_retest$RATM07_T1[test_retest$ATM07_T1 == "1"] <- "5"
+test_retest$RATM07_T1[test_retest$ATM07_T1 == "2"] <- "4"
+test_retest$RATM07_T1[test_retest$ATM07_T1 == "3"] <- "3"
+test_retest$RATM07_T1[test_retest$ATM07_T1 == "4"] <- "2"
+test_retest$RATM07_T1[test_retest$ATM07_T1 == "5"] <- "1"
+test_retest$RATM07_T1 <- as.numeric(test_retest$RATM07_T1)
+
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM16_T1 <- as.character(test_retest$ATM16_T1)
+test_retest$RATM16_T1[test_retest$ATM16_T1 == "1"] <- "5"
+test_retest$RATM16_T1[test_retest$ATM16_T1 == "2"] <- "4"
+test_retest$RATM16_T1[test_retest$ATM16_T1 == "3"] <- "3"
+test_retest$RATM16_T1[test_retest$ATM16_T1 == "4"] <- "2"
+test_retest$RATM16_T1[test_retest$ATM16_T1 == "5"] <- "1"
+test_retest$RATM16_T1 <- as.numeric(test_retest$RATM16_T1)
+
+
+## Recoding test_retest$ATM08_T1 into test_retest$RATM08_T1
+test_retest$RATM18_T1 <- as.character(test_retest$ATM18_T1)
+test_retest$RATM18_T1[test_retest$ATM18_T1 == "1"] <- "5"
+test_retest$RATM18_T1[test_retest$ATM18_T1 == "2"] <- "4"
+test_retest$RATM18_T1[test_retest$ATM18_T1 == "3"] <- "3"
+test_retest$RATM18_T1[test_retest$ATM18_T1 == "4"] <- "2"
+test_retest$RATM18_T1[test_retest$ATM18_T1 == "5"] <- "1"
+test_retest$RATM18_T1 <- as.numeric(test_retest$RATM18_T1)
+
+
+# Part 2
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM08_T2 <- as.character(test_retest$ATM08_T2)
+test_retest$RATM08_T2[test_retest$ATM08_T2 == "1"] <- "5"
+test_retest$RATM08_T2[test_retest$ATM08_T2 == "2"] <- "4"
+test_retest$RATM08_T2[test_retest$ATM08_T2 == "3"] <- "3"
+test_retest$RATM08_T2[test_retest$ATM08_T2 == "4"] <- "2"
+test_retest$RATM08_T2[test_retest$ATM08_T2 == "5"] <- "1"
+test_retest$RATM08_T2 <- as.numeric(test_retest$RATM08_T2)
+
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM13_T2 <- as.character(test_retest$ATM13_T2)
+test_retest$RATM13_T2[test_retest$ATM13_T2 == "1"] <- "5"
+test_retest$RATM13_T2[test_retest$ATM13_T2 == "2"] <- "4"
+test_retest$RATM13_T2[test_retest$ATM13_T2 == "3"] <- "3"
+test_retest$RATM13_T2[test_retest$ATM13_T2 == "4"] <- "2"
+test_retest$RATM13_T2[test_retest$ATM13_T2 == "5"] <- "1"
+test_retest$RATM13_T2 <- as.numeric(test_retest$RATM13_T2)
+
+
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM17_T2 <- as.character(test_retest$ATM17_T2)
+test_retest$RATM17_T2[test_retest$ATM17_T2 == "1"] <- "5"
+test_retest$RATM17_T2[test_retest$ATM17_T2 == "2"] <- "4"
+test_retest$RATM17_T2[test_retest$ATM17_T2 == "3"] <- "3"
+test_retest$RATM17_T2[test_retest$ATM17_T2 == "4"] <- "2"
+test_retest$RATM17_T2[test_retest$ATM17_T2 == "5"] <- "1"
+test_retest$RATM17_T2 <- as.numeric(test_retest$RATM17_T2)
+
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM02_T2 <- as.character(test_retest$ATM02_T2)
+test_retest$RATM02_T2[test_retest$ATM02_T2 == "1"] <- "5"
+test_retest$RATM02_T2[test_retest$ATM02_T2 == "2"] <- "4"
+test_retest$RATM02_T2[test_retest$ATM02_T2 == "3"] <- "3"
+test_retest$RATM02_T2[test_retest$ATM02_T2 == "4"] <- "2"
+test_retest$RATM02_T2[test_retest$ATM02_T2 == "5"] <- "1"
+test_retest$RATM02_T2 <- as.numeric(test_retest$RATM02_T2)
+
+
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM07_T2 <- as.character(test_retest$ATM07_T2)
+test_retest$RATM07_T2[test_retest$ATM07_T2 == "1"] <- "5"
+test_retest$RATM07_T2[test_retest$ATM07_T2 == "2"] <- "4"
+test_retest$RATM07_T2[test_retest$ATM07_T2 == "3"] <- "3"
+test_retest$RATM07_T2[test_retest$ATM07_T2 == "4"] <- "2"
+test_retest$RATM07_T2[test_retest$ATM07_T2 == "5"] <- "1"
+test_retest$RATM07_T2 <- as.numeric(test_retest$RATM07_T2)
+
+
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM16_T2 <- as.character(test_retest$ATM16_T2)
+test_retest$RATM16_T2[test_retest$ATM16_T2 == "1"] <- "5"
+test_retest$RATM16_T2[test_retest$ATM16_T2 == "2"] <- "4"
+test_retest$RATM16_T2[test_retest$ATM16_T2 == "3"] <- "3"
+test_retest$RATM16_T2[test_retest$ATM16_T2 == "4"] <- "2"
+test_retest$RATM16_T2[test_retest$ATM16_T2 == "5"] <- "1"
+test_retest$RATM16_T2 <- as.numeric(test_retest$RATM16_T2)
+
+
+## Recoding test_retest$ATM08_T2 into test_retest$RATM08_T2
+test_retest$RATM18_T2 <- as.character(test_retest$ATM18_T2)
+test_retest$RATM18_T2[test_retest$ATM18_T2 == "1"] <- "5"
+test_retest$RATM18_T2[test_retest$ATM18_T2 == "2"] <- "4"
+test_retest$RATM18_T2[test_retest$ATM18_T2 == "3"] <- "3"
+test_retest$RATM18_T2[test_retest$ATM18_T2 == "4"] <- "2"
+test_retest$RATM18_T2[test_retest$ATM18_T2 == "5"] <- "1"
+test_retest$RATM18_T2 <- as.numeric(test_retest$RATM18_T2)
+
+
+total_test_retest_data <- test_retest %>% 
+  rowwise() %>% 
+  mutate(Close_t1 =   sum(ATM01_T1,ATM06_T1,RATM08_T1,ATM12_T1,RATM13_T1, na.rm = T),
+        Close_t2 =   sum(ATM01_T2,ATM06_T2,RATM08_T2,ATM12_T2,RATM13_T2, na.rm = T ),
+        depend_t1 =  
+        sum(ATM03_T1,ATM04_T1,ATM09_T1,ATM10_T1,ATM11_T1,ATM15_T1, na.rm = T),
+        depend_t2 =   sum(ATM03_T2,ATM04_T2,ATM09_T2,ATM10_T2,ATM11_T2,ATM15_T2, na.rm = T ),
+        
+        
+        anxiety_t1 =  
+        sum(RATM07_T1,ATM14_T1,RATM16_T1,RATM18_T1, na.rm = T),
+        anxiety_t2 =   sum(RATM07_T2,ATM14_T2,RATM16_T2,RATM18_T2, na.rm = T ))
+        
+
+
+icc_close <- as.data.frame(cbind(total_test_retest_data$Close_t1, total_test_retest_data$Close_t2))
+
+
+icc_anxiety <- as.data.frame(cbind(total_test_retest_data$anxiety_t1, total_test_retest_data$anxiety_t2))
+
+icc_depend<- as.data.frame(cbind(total_test_retest_data$depend_t1, total_test_retest_data$depend_t2))
+
+
+
+psych::ICC(icc_close)
+psych::ICC(icc_anxiety)
+psych::ICC(icc_depend)
+
+
+```
+
+
+
+
+# Concurrent validity
+
+```{r validity_anlanysis}
+
+total_data <- raas %>% 
+  rowwise() %>% 
+  mutate(Close_total =   sum(ATM01,ATM06,RATM08,ATM12,RATM13, na.rm = T),
+        
+        depend_total =  
+        sum(RATM07,Atm14,RATM16,RATM18, na.rm = T),
+        
+        
+         anxiety_total =  
+         sum(ATM03,ATM04,ATM09,ATM10,ATM11,ATM15, na.rm = T ))
+
+
+
+
+
+
+correlation_data_1 <- total_data %>% 
+  dplyr::select(Close_total, anxiety_total, depend_total)
+
+
+
+correlation_data_2 <- cbind(correlation_data_1, Validity_data )
+
+```
+
+
+```{r correlationfunc, include =F}
+glrstab<- function(x, export=FALSE) {
+ 
+ r <-corr.test(x)$r	#taking just the correlation matrix; no N, or p
+ p <-corr.test(x)$p	#taking the p*s
+ 
+#define notions for significance levels
+ mystars <- ifelse(p < .001, "**"
+                   , ifelse(p < .01, "**"
+                            , ifelse(p < .05, "*"
+                                     , ifelse(p < .10, "+", " "))))
+ 
+ #round r, define new matrix Rnew with the correlations from rnd and paste mystars
+ rnd  <- papaja::printnum(r, gt1 = FALSE, digits = 2)  #round, drop leading 0 - Thanks CRSH!								                     
+ Rnew <- matrix(paste(rnd, mystars, sep=""), ncol=ncol(rnd)) 
+ 
+  #remove 1.0 correlations from diagonal  and set the strings
+ diag(Rnew) <- ''		
+ Rnew[upper.tri(Rnew)] <- ''								                	
+ 
+ rownames(Rnew) <- paste(1:ncol(rnd), colnames(rnd), sep=" ")         #define number and name
+ colnames(Rnew) <- paste(1:ncol(rnd), "", sep="") 			       #define number
+ 
+#fun-part: we trim the top half 
+ Rnew[upper.tri(Rnew)] <- ''			
+ Rnew
+ 
+ #Rnew <- cbind(round(describe(x)[,3:4],2), Rnew)		     #describe x, M sD - put them in the matrix
+ #colnames(Rnew)[1:2] <- c("M","SD")					      		#Beschriftung der neuen Spalten
+ Rnew <- Rnew[,1:(ncol(Rnew)-1)]							        	#delete the last column (ugly)
+ 
+ #export to clipboard
+ 
+   if (export==TRUE){
+   result<-write.table(Rnew
+                       , "clipboard"
+                       , sep=";"
+                       , row.names=FALSE)
+ }
+ else result <- Rnew
+ return(result)
+ 
+}
+
+```
+
+```{r correlations, include =F}
+Cor <-(glrstab(correlation_data_2)) #the function in action!
+
+
+
+write_csv(Cor, "concurrent.csv")
+
+```
+
+
+
+
+
+
+
+#Extra 
+
+
+```{r esem-domain, eval=FALSE, include=FALSE}
+# devtools::install_github("MateusPsi/esemComp")
+library(esemComp)
+esem_data <- ATM %>% 
+  dplyr::select(ATM01,ATM06,RATM08,ATM12,RATM13,RATM17,
+                ATM03,ATM04,ATM09,ATM10,ATM11,ATM15,
+                RATM02,ATM05,RATM07,Atm14,RATM16,RATM18)
+
+
+esem_data_2 <- as.data.frame(lapply(esem_data, as.numeric))
+
+
+#creating a target matrix
+target_rot <- esemComp::make_target(18,#Item number
+                                    mainloadings=list(
+                                      Close=1:6,
+                                      Depend=7:12,
+                                       Anxiety=13:18))
+
+
+esem_tareget_efa <- esem_efa(esem_data_2,nfactors=3, target= target_rot, fm="ml")
+
+#Find the referent item for each factor
+referents <- find_referents(esem_tareget_efa, factor_names = c("Anxiety", "Depend", "Close"))
+
+#make esem model
+esem_model <- syntax_composer(esem_tareget_efa, referents)
+
+#print model
+# writeLines(esem_model)
+
+
+#Fit the model
+esem_fit <- lavaan::cfa(esem_model, esem_data_2,ordered = names(esem_data_2), estimator = "WLSMV", mimic = "Mplus", std.lv=T)
+
+esem_sumary <- summary(esem_fit, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+
+fitmeasures (esem_fit ,c("gfi", "agfi", "nfi","rfi", "cfi.scaled","tli.scaled","rmsea.scaled", "srmr","aic"))
+
+
+# library("semTools")
+
+# saveFile(esem_fit, "Processeddata/esem_domain_factor_loadings.txt","coef", tableFormat = T)
+```
+
+
+```{r esem-domain-invariance-gender, eval=FALSE, include=FALSE}
+
+invariance_data <- cbind(data$Sex, esem_data_2)
+
+colnames(invariance_data)[1] <- "Gender" 
+
+invariance_data_model <- esem_model
+
+
+#Model 1
+invariance_model_1 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV")
+
+
+invariance_model_1_summary <- summary(invariance_model_1, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_1 <- readRDS("Processeddata/Invariance_data/invariance_model_1_gender.rds")
+invariance_model_1_fitindices <- fitmeasures (invariance_model_1,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled", "rmsea",
+                        "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_1, "Processeddata/Invariance_data/invariance_model_1_gender.rds")
+
+#Model 2: Weak/metric
+
+invariance_model_2 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = "loadings")
+
+
+invariance_model_2_summary <- summary(invariance_model_2, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_2 <- readRDS("Processeddata/Invariance_data/invariance_model_2_gender.rds")
+
+invariance_model_2_fitindices <- fitmeasures (invariance_model_2,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled", "rmsea",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_2, "Processeddata/Invariance_data/invariance_model_2_gender.rds")
+
+
+
+#Model 3
+
+invariance_model_3 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings","residuals"))
+
+invariance_model_3_summary <- summary(invariance_model_3, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_3 <- readRDS("Processeddata/Invariance_data/invariance_model_3_gender.rds")
+
+invariance_model_3_fitindices <- fitmeasures (invariance_model_3,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+            
+
+write_rds(invariance_model_3, "Processeddata/Invariance_data/invariance_model_3_gender.rds")
+
+
+
+#Model 4
+
+invariance_model_4 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings","lv.variances","lv.covariances"))
+
+invariance_model_4_summary <- summary(invariance_model_4, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_4 <- readRDS("Processeddata/Invariance_data/invariance_model_4_gender.rds")
+
+invariance_model_4_fitindices <- fitmeasures (invariance_model_4,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_4, "Processeddata/Invariance_data/invariance_model_4_gender.rds")
+
+
+#Model 5: Strong/Scaler
+
+invariance_model_5 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "intercepts"))
+
+invariance_model_5_summary <- summary(invariance_model_5, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_5 <- readRDS("Processeddata/Invariance_data/invariance_model_5_gender.rds")
+
+invariance_model_5_fitindices <- fitmeasures (invariance_model_5,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_5, "Processeddata/Invariance_data/invariance_model_5_gender.rds")
+
+
+#Model 6
+
+invariance_model_6 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "lv.variances","lv.covariances","residuals"))
+
+invariance_model_6_summary <- summary(invariance_model_6, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_6 <- readRDS("Processeddata/Invariance_data/invariance_model_6_gender.rds")
+
+invariance_model_6_fitindices <- fitmeasures (invariance_model_6,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_6, "Processeddata/Invariance_data/invariance_model_6_gender.rds")
+
+
+
+#Model 7: Strict/residual
+
+invariance_model_7 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "intercepts", "residuals"))
+
+invariance_model_7_summary <- summary(invariance_model_7, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+
+# invariance_model_7 <- readRDS("Processeddata/Invariance_data/invariance_model_7_gender.rds")
+
+invariance_model_7_fitindices <- fitmeasures (invariance_model_7,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_7, "Processeddata/Invariance_data/invariance_model_7_gender.rds")
+
+
+#Model 8
+
+invariance_model_8 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "intercepts", "lv.variances","lv.covariances"))
+
+invariance_model_8_summary <- summary(invariance_model_8, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_8 <- readRDS("Processeddata/Invariance_data/invariance_model_8_gender.rds")
+
+
+invariance_model_8_fitindices <- fitmeasures (invariance_model_8,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+write_rds(invariance_model_8, "Processeddata/Invariance_data/invariance_model_8_gender.rds")
+
+#Model 9
+
+invariance_model_9 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "intercepts", "lv.variances","lv.covariances","residuals"))
+
+invariance_model_9_summary <- summary(invariance_model_9, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_9 <- readRDS("Processeddata/Invariance_data/invariance_model_9_gender.rds")
+
+invariance_model_9_fitindices <- fitmeasures (invariance_model_9,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+
+write_rds(invariance_model_9, "Processeddata/Invariance_data/invariance_model_9_gender.rds")
+
+
+#Model 10
+
+invariance_model_10 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "intercepts", "means"))
+
+invariance_model_10_summary <- summary(invariance_model_10, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_10 <- readRDS("Processeddata/Invariance_data/invariance_model_10_gender.rds")
+
+invariance_model_10_fitindices <- fitmeasures (invariance_model_10,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+
+write_rds(invariance_model_10, "Processeddata/Invariance_data/invariance_model_10_gender.rds")
+
+
+#Model 11
+
+invariance_model_11 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "residuals","intercepts", "means"))
+
+invariance_model_11_summary <- summary(invariance_model_11, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_11 <- readRDS("Processeddata/Invariance_data/invariance_model_11_gender.rds")
+
+
+invariance_model_11_fitindices <- fitmeasures (invariance_model_11,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+
+write_rds(invariance_model_11, "Processeddata/Invariance_data/invariance_model_11_gender.rds")
+
+
+#Model 12
+
+invariance_model_12 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings", "lv.variances","lv.covariances","intercepts", "means"))
+
+# invariance_model_12 <- readRDS("Processeddata/Invariance_data/invariance_model_12_gender.rds")
+
+
+invariance_model_12_summary <- summary(invariance_model_12, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+invariance_model_12_fitindices <- fitmeasures (invariance_model_12,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+
+write_rds(invariance_model_12, "Processeddata/Invariance_data/invariance_model_12_gender.rds")
+
+
+
+#Model 13
+
+invariance_model_13 <- cfa(model = invariance_data_model,
+                  data = invariance_data,
+                  ordered =   names(invariance_data),
+                  group = "Gender",
+                  estimator = "WLSMV",
+                  group.equal = c("loadings","residuals", "lv.variances","lv.covariances","intercepts", "means"))
+
+invariance_model_13_summary <- summary(invariance_model_13, fit.measures =TRUE,standardized = TRUE, rsq =TRUE)
+
+# invariance_model_13 <- readRDS("Processeddata/Invariance_data/invariance_model_13_gender.rds")
+
+
+invariance_model_13_fitindices <- fitmeasures (invariance_model_13,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli","cfi.scaled","tli.scaled",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+
+write_rds(invariance_model_13, "Processeddata/Invariance_data/invariance_model_13_gender.rds")
+
+
+
+
+
+
+models <-  list("M1" = invariance_model_1, 
+                "M2" = invariance_model_2, 
+                "M3" = invariance_model_3, 
+                "M4" = invariance_model_4,
+                "M5"=invariance_model_5,
+                "M6"=invariance_model_6,
+                "M7"=invariance_model_7,
+                "M8"=invariance_model_8,
+                "M9"=invariance_model_9,
+                "M10"=invariance_model_10,
+                "M11"=invariance_model_11,
+                "M12"=invariance_model_12,
+                "M13"=invariance_model_13)
+
+
+
+esem_invariance.table <- compareLavaan(models,
+              nesting = "M1 > M2 > M3 > M4 > M5 > M6 > M7 > M8 > M9 > M10 > M11 > M12 > M13", 
+              fitmeas = c("chisq.scaled", "df",  "cfi","tli","rmsea", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled" ),
+              scaled = T,
+              chidif = T, digits = 2)
+
+colnames(esem_invariance.table) <- c("Chi-Square", "df", "CFI", "TLI", "RMSEA", "RMSEA 90% Lower CI", "RMSEA 90% Upper", "Chi-Square Difference", "df difference*", "p")
+
+
+
+esem_invariance.table <- esem_invariance.table %>%  mutate(CFA_diff = CFI - lag(CFI),
+                                                           TLI_diff= TLI- lag(TLI),
+                                                           RMSEA_diff= RMSEA-lag(RMSEA),
+                                                           CFI_invariance= ifelse(CFA_diff>-0.01, TRUE, FALSE),
+                                                           TLI_invariance= ifelse(TLI_diff>-0.01, TRUE, FALSE),
+                                                           RMSEA_invariance= ifelse(RMSEA_diff<0.01, TRUE, FALSE))
+
+write_rds(esem_invariance.table, "Processeddata/Invariance_data/invariance_data_table_esem_gender.rds")
+
+esem_invariance.table_scaled <- compareLavaan(models,
+              nesting = "M1 > M2 > M3 > M4 > M5 > M6 > M7 > M8 > M9 > M10 > M11 > M12 > M13", 
+              fitmeas = c("chisq.scaled", "df",  "cfi","tli","rmsea", "rmsea.ci.lower.scaled", "rmsea.ci.upper.scaled" ),
+              scaled = T,
+              chidif = T, digits = 2)
+
+colnames(esem_invariance.table_scaled) <- c("Chi-Square", "df", "CFI", "TLI", "RMSEA", "RMSEA 90% Lower CI", "RMSEA 90% Upper", "Chi-Square Difference", "df difference*", "p")
+
+
+esem_invariance_table_scaled <- esem_invariance.table_scaled %>%  mutate(CFA_diff = CFI - lag(CFI),
+                                                           TLI_diff= TLI- lag(TLI),
+                                                           RMSEA_diff= RMSEA-lag(RMSEA),
+                                                           CFI_invariance= ifelse(CFA_diff>-0.01, TRUE, FALSE),
+                                                           TLI_invariance= ifelse(TLI_diff>-0.01, TRUE, FALSE),
+                                                           RMSEA_invariance= ifelse(RMSEA_diff<0.01, TRUE, FALSE))
+
+write_rds(esem_invariance_table_scaled, "Processeddata/Invariance_data/invariance_data_table_esem_gender_scaled.rds")
+
+
+# full_invariance_table_gender <- readRDS("Processeddata/Invariance_data/invariance_data_table_esem_gender.rds")
+
+```
+
+
+```{r CFAoriginal}
+library(lavaan)
+
+
+
+model <- "Close =~ Item01+Item06+Item08R+Item12+Item13R+Item17R
+            
+          Dependent =~  Item02R+Item05+Item07R+Item14+Item16R+Item18R
+          
+          Anxiety =~ Item03+Item04+Item09+Item10+Item11+Item15
+                      "
+
+
+fit.org <- lavaan::cfa(model, data= data, mimic = "Mplus",ordered = names(data),
+                   estimator = "WLSMV")
+
+## Summary of Model 
+summary(fit.org, fit.measures =TRUE,standardized = TRUE,rsq =TRUE)
+
+ 
+# modfit.m1 <- modindices(fit.org_1, sort. = TRUE) 
+# modfit.m1[modfit.m1$mi>3.84,]
+
+
+
+
+#Excluding item 02, item 17, 05
+model_1 <- "Close =~ Item01+Item06+Item08R+Item12+Item13R
+            
+          Dependent =~  Item07R+Item14+Item16R+Item18R
+          
+          Anxiety =~ Item03+Item04+Item09+Item10+Item11+Item15
+                      "
+
+
+
+fit.org_1 <- lavaan::cfa(model_1, data= data, mimic = "Mplus",
+                         ordered = names(data),
+                   estimator = "WLSMV")
+
+## Summary of Model 
+summary(fit.org_1, fit.measures =TRUE,standardized = TRUE,rsq =TRUE)
+
+
+
+
+## Selected Fit measures 
+fit.m.org <- fitmeasures (fit.org,c("gfi", "agfi", "nfi","rfi", 
+                       "cfi","tli",
+                       "rmsea", "rmsea.ci.lower", "rmsea.ci.upper","srmr"))
+
+
+reliability.org <- semTools::reliability(fit.org, return.total = T)
+
+
+
+
+
+```
+
+
+
+
+
+
+
+# Methods
+We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+
+## Participants
+
+## Material
+
+## Procedure
+
+## Data analysis
+We used `r cite_r("r-references.bib")` for all our analyses.
+
+
+# Results
+
+# Discussion
+
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::
